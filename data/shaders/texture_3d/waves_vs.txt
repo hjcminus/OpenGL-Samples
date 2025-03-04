@@ -1,0 +1,13 @@
+#version 410
+
+layout (location = 0) in  vec4 inVPos;
+layout (location = 1) in  vec3 inX;
+layout (location = 0) out vec3 x;
+
+uniform mat4 modelViewProj;
+
+void main()
+{
+    gl_Position = modelViewProj * inVPos;
+    x = inX;
+}

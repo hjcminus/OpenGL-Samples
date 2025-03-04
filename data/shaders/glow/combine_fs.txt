@@ -1,0 +1,15 @@
+#version 410
+
+layout (location = 0) in  vec2 inTex;
+layout (location = 0) out vec4 outColor;
+
+uniform sampler2D tex1;
+uniform sampler2D tex2;
+
+void main()
+{
+	vec4 src = texture(tex1, inTex);
+	vec4 dst = texture(tex2, inTex);
+	//outColor = src + dst;
+	outColor = (src + dst) - (src * dst);
+}

@@ -1,0 +1,106 @@
+#version 410
+
+layout (location = 0) in  vec3 outEyeRayPos;
+layout (location = 1) in  vec3 outEyeRayDir;
+layout (location = 0) out vec4 outColor;
+
+uniform sampler3D 	volumeTex;
+uniform int       	steps;
+uniform float		stepsize;
+uniform float    	brightness;
+uniform float     	density;
+//uniform float     	threshold;
+uniform vec3      	boxMin;
+uniform vec3      	boxMax;
+
+struct Ray {
+    vec3 o; //origin
+    vec3 d; //direction
+};
+
+bool IntersectBox(Ray r, vec3 boxmin, vec3 boxmax, out float tnear, out float tfar)
+{
+    //compute intersection of ray with all six bbox planes
+    vec3 invR = 1.0 / r.d;
+    vec3 tbot = invR * (boxmin.xyz - r.o);
+    vec3 ttop = invR * (boxmax.xyz - r.o);
+	
+    //re-order intersections to find smallest and largest on each axis
+    vec3 tmin = min(ttop, tbot);
+    vec3 tmax = max(ttop, tbot);
+	
+    //find the largest tmin and the smallest tmax
+    vec2 t0 = max(tmin.xx, tmin.yz);
+    float largest_tmin = max(t0.x, t0.y);
+    t0 = min(tmax.xx, tmax.yz);
+    float smallest_tmax = min(t0.x, t0.y);
+	
+    //check for hit
+    bool hit;
+    if (largest_tmin > smallest_tmax) {
+        hit = false;
+    }
+    else {
+        hit = true;
+    }
+		
+    tnear = largest_tmin;
+    tfar  = smallest_tmax;
+	
+    return hit;
+}
+
+vec4 lerp(vec4 a, vec4 b, float t)
+{
+    vec4 c = a * (1-t) + b * t;
+    return c;
+}
+
+void main(void)
+{
+    Ray eyeray;
+
+    eyeray.o = outEyeRayPos;
+    eyeray.d = normalize(outEyeRayDir);
+	
+    //calculate ray intersection with bounding box
+    float tnear, tfar;
+    bool hit = IntersectBox(eyeray, boxMin, boxMax, tnear, tfar);
+    if (!hit) {
+        discard;
+    }
+		
+    if (tnear < 0.0) {
+        tnear = 0.0;
+    }
+	
+    //calcuate intersection points
+    vec3 Pnear = eyeray.o + eyeray.d * tnear;
+    vec3 Pfar = eyeray.o + eyeray.d * tfar;
+	
+    //convert to texture space
+    Pnear = Pnear * 0.5 + 0.5;
+    Pfar = Pfar * 0.5 + 0.5;
+	
+    //march along ray, accumulating color
+    vec4 c = vec4(0);
+	
+    //use back-to-front rendering
+    vec3 P = Pfar;
+    vec3 Pstep = -eyeray.d * stepsize;
+	
+    for (int i = 0; i < steps; ++i) {
+        vec4 s = texture(volumeTex, P);
+		
+        s = abs(s);
+        s.a = clamp(s.a, 0, 1);
+        s.a *= density;
+		
+        c = lerp(c, s, s.a);
+		
+        P += Pstep;
+    }
+    c.rgb *= brightness;
+	
+    outColor = c;
+}

@@ -1,0 +1,15 @@
+#version 410
+
+layout (location = 0) in  vec4 inVPos;
+layout (location = 0) out vec3 outEyeRayPos;
+layout (location = 1) out vec3 outEyeRayDir;
+
+uniform mat4 modelViewProj;
+uniform mat4 modelViewInv;
+
+void main()
+{
+    gl_Position = modelViewProj * inVPos;
+    outEyeRayPos = (modelViewInv * vec4(0, 0, 0, 1)).xyz;
+    outEyeRayDir = inVPos.xyz - outEyeRayPos;
+}

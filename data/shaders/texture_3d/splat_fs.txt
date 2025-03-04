@@ -1,0 +1,14 @@
+#version 410
+
+layout (location = 0) in  vec3 x;
+layout (location = 0) out vec4 outColor;
+
+uniform vec3  center;
+uniform float radius;
+uniform vec4  color;
+
+void main(void)
+{
+    float d = length(x - center);
+    outColor = (1.0 - smoothstep(0.0, radius, d)) * color;
+}

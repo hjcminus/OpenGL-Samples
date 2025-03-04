@@ -1,0 +1,25 @@
+#version 410
+
+layout (location = 0) in  vec3 x;
+layout (location = 0) out vec4 outColor;
+
+uniform sampler3D currentTex;
+uniform sampler3D prevTex;
+uniform vec3  voxelSize;
+uniform float damping;
+
+void main(void)
+{
+    vec4 smoothed;
+    smoothed =  texture(currentTex, x + vec3( 1,0, 0) * voxelSize);
+    smoothed += texture(currentTex, x + vec3(-1,0, 0) * voxelSize);
+    smoothed += texture(currentTex, x + vec3(0, 1, 0) * voxelSize);
+    smoothed += texture(currentTex, x + vec3(0,-1, 0) * voxelSize);
+    smoothed += texture(currentTex, x + vec3(0, 0, 1) * voxelSize);
+    smoothed += texture(currentTex, x + vec3(0, 0,-1) * voxelSize);
+    smoothed /= 6.0;
+
+    vec4 prev = texture(prevTex, x);
+
+    outColor = (smoothed * 2.0 - prev) * damping;
+}

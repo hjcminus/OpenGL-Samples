@@ -1,0 +1,46 @@
+#version 410
+
+layout (location = 0) in  vec2 inTex;
+layout (location = 0) out vec4 outColor;
+
+uniform sampler2D tex;
+uniform vec2 stTexelSize;
+uniform int blurCoreSize;
+
+float Weight(int x, int y)
+{
+    float o = blurCoreSize * 0.5;
+    float p = -(x * x + y * y) / (2 * o * o);
+    float e = pow(2.718281828, p);
+    float d = 2 * 3.1415926 * o * o;
+    return e / d;
+}
+
+void main()
+{
+    int halfCoreSize = blurCoreSize / 2;
+	
+	float wtSum = 0.0;
+	for (int x = -halfCoreSize; x < blurCoreSize - halfCoreSize; ++x)
+	{
+	    for (int y = -halfCoreSize; y < blurCoreSize - halfCoreSize; ++y)
+		{
+		    float wt = Weight(x, y);
+		    wtSum += wt;
+		}
+	}
+	
+	float f = 1.0 / wtSum;
+	
+	vec4 colorSum = vec4(0.0);
+    for (int x = -halfCoreSize; x < blurCoreSize - halfCoreSize; ++x)
+	{
+	    for (int y = -halfCoreSize; y < blurCoreSize - halfCoreSize; ++y)
+		{
+		    float new_wt = Weight(x, y) * f;
+			vec4 c = texture(tex, inTex + stTexelSize * vec2(x, y)) * new_wt;
+		    colorSum += c;
+		}
+	}
+    outColor = colorSum;
+}
