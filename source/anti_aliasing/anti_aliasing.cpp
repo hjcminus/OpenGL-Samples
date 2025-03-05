@@ -3,7 +3,7 @@
  * @brief
  *****************************************************************************/
 
-#include "../Common/Common.h"
+#include "../common/common.h"
 
 Viewport rViewport;
 View rView;

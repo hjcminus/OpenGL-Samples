@@ -3,7 +3,7 @@
  * @brief   test TCS & TES
  *****************************************************************************/
 
-#include "../Common/Common.h"
+#include "../common/common.h"
 
 Viewport rViewport;
 View rView;
