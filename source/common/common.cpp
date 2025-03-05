@@ -1,9 +1,18 @@
-//2016-01-20 Wed.
+/******************************************************************************
+ * @file	common.cpp
+ * @brief
+ *****************************************************************************/
 
 #include "common.h"
-#include <mmsystem.h>
 
-#pragma comment(lib, "winmm")
+#if defined(_WIN32)
+# include <mmsystem.h>
+# pragma comment(lib, "winmm")
+#else
+# include <chrono>
+# include <unistd.h>
+#endif
+
 /*
 ================================================================================
 Common
@@ -40,34 +49,38 @@ static void OnDisplay();
 static void OnTime(int value);
 static void OnClose();
 
-static ComParam  comParam;
+static ComParam	comParam;
 
-static int       rCursorDeltaX;
-static int       rCursorDeltaY;
-static int       rForward;
-static int       rRight;
-static float     CURSOR_ROTATION_SCALE = 0.2f;
-float     gMovingSpeed = 10.0f;
+static int		rCursorDeltaX;
+static int		rCursorDeltaY;
+static int		rForward;
+static int		rRight;
+static float	CURSOR_ROTATION_SCALE = 0.2f;
+float			gMovingSpeed = 10.0f;
 
-//mouse
-static bool      leftButtonDown;
-static int       cursorPosX;
-static int       cursorPosY;
-static int       previousPosX;
-static int       previousPosY;
+// mouse
+static bool		leftButtonDown;
+static int		cursorPosX;
+static int		cursorPosY;
+static int		previousPosX;
+static int		previousPosY;
 
 void Com_Run(int argc, char **argv, const ComParam &param) {
-	//setup timer
+#if defined(_WIN32)
+	// setup timer
 	timeBeginPeriod(1);
+#endif
 
 	comParam = param;
 
-	//setup directory path
+	// setup directory path
+
 	static wchar_t dataDir[MAX_PATH];
 	static wchar_t textureDir[MAX_PATH];
 	static wchar_t modelDir[MAX_PATH];
 	static wchar_t shaderDir[MAX_PATH];
 
+#if defined(_WIN32)
 	wchar_t buffer1[MAX_PATH], buffer2[MAX_PATH];
 	GetModuleFileName(GetModuleHandle(NULL), buffer1, MAX_PATH);
 
@@ -80,13 +93,29 @@ void Com_Run(int argc, char **argv, const ComParam &param) {
 	wsprintf(textureDir, L"%s/data/textures", buffer1);
 	wsprintf(modelDir, L"%s/data/models", buffer1);
 	wsprintf(shaderDir, L"%s/data/shaders", buffer1);
+#endif
+
+#if defined(__linux__)
+	wchar_t buffer1[MAX_PATH], buffer2[MAX_PATH];
+
+	mbstowcs(buffer1, argv[0], MAX_PATH);
+
+	ExtractParentDir(buffer1, buffer2); // .\gmake2\bin
+	ExtractParentDir(buffer2, buffer1); // .\gmake2
+	ExtractParentDir(buffer1, buffer2); // .
+
+	swprintf_s(dataDir, MAX_PATH, L"%s/data", buffer2);
+	swprintf_s(textureDir, MAX_PATH, L"%s/data/textures", buffer2);
+	swprintf_s(modelDir, MAX_PATH, L"%s/data/models", buffer2);
+	swprintf_s(shaderDir, MAX_PATH, L"%s/data/shaders", buffer2);
+#endif
 
 	DATA_DIR    = dataDir;
 	TEXTURE_DIR = textureDir;
 	MODEL_DIR   = modelDir;
 	SHADER_DIR  = shaderDir;
 
-	//setup render environment
+	// setup render environment
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -108,7 +137,7 @@ void Com_Run(int argc, char **argv, const ComParam &param) {
 		return;
 	}
 
-	//init callback functions
+	// init callback functions
 	glutReshapeFunc(param.Reshape);
 	glutMouseFunc(OnMouse);
 	glutMotionFunc(OnMotion);
@@ -124,8 +153,22 @@ void Com_Run(int argc, char **argv, const ComParam &param) {
 	glutMainLoop();
 }
 
-uint32 Com_GetMS() {
+uint32_t Com_GetMS() {
+#if defined(_WIN32)
 	return timeGetTime();
+#else
+	auto time_now = std::chrono::system_clock::now();
+	auto duration_in_ms = std::chrono::duration_cast<std::chrono::milliseconds>(time_now.time_since_epoch());
+	return (uint32_t)duration_in_ms.count();
+#endif
+}
+
+void Sys_Sleep(int ms) {
+#if defined(_WIN32)
+	Sleep((DWORD)ms);
+#elif defined(__linux__)
+	usleep(ms * 1000);
+#endif
 }
 
 static void UpdateView(float deltaYaw, float deltaPitch, int forward, int right) {
@@ -175,13 +218,13 @@ static void UpdateView(float deltaYaw, float deltaPitch, int forward, int right)
 
 		glm::mat4 rotateXMatrix = glm::rotate(glm::mat4(1.0f), Math_DegToRad(comParam.view->yaw), glm::vec3(comParam.view->up));
 		comParam.view->modelMatrix = glm::rotate(rotateXMatrix, Math_DegToRad(comParam.view->pitch), glm::vec3(comParam.view->right));
-		//no translation for now 2016-01-26 Tue.
+		// no translation for now
 	}
 	
 	glutPostRedisplay();
 }
 
-//glut callback
+// glut callbacks
 
 static void OnMouse(int button, int state, int x, int y) {
 	if (GLUT_LEFT_BUTTON == button) {
@@ -281,12 +324,12 @@ static void OnKeyboardUp(unsigned char key, int x, int y) {
 }
 
 static void OnIdle() {
-	static uint32 time = 0;
+	static uint32_t time = 0;
 	if (!time) {
 		time = Com_GetMS();
 	}
 	else {
-		uint32 current = Com_GetMS();
+		uint32_t current = Com_GetMS();
 		if (current - time >= 16) {
 			rCursorDeltaX = cursorPosX - previousPosX;
 			rCursorDeltaY = cursorPosY - previousPosY;
@@ -314,14 +357,17 @@ static void OnIdle() {
 }
 
 static void OnTime(int value) {
-
+	//
 }
 
 static void OnClose() {
 	if (comParam.Shutdown) {
 		comParam.Shutdown();
 	}
+
+#if defined(_WIN32)
 	timeEndPeriod(1);
+#endif
 }
 
 /*
@@ -346,6 +392,19 @@ float Math_RadToDeg(float r) {
 file
 ================================================================================
 */
+
+#if defined(__linux__)
+void _wfopen_s(FILE** f, const wchar_t* filename, const wchar_t* md) {
+	char utf8_filename[MAX_PATH];
+	char utf8_mode[MAX_PATH];
+
+	wcstombs(utf8_filename, filename, MAX_PATH);
+	wcstombs(utf8_mode, md, MAX_PATH);
+
+	*f = fopen(utf8_filename, utf8_mode);
+}
+#endif
+
 bool File_Read(const wchar_t *fileName, File &file, bool appendNullTernimator) {
 	memset(&file, 0, sizeof(file));
 
@@ -440,15 +499,9 @@ void V_PerspectiveMatrix(const Viewport &viewport, float fovy, glm::mat4 &out) {
 	out = glm::perspective(fovy * 3.1415926f / 180.0f, (float)viewport.width / viewport.height, viewport.zNear, viewport.zFar);
 }
 
-#if 0
-void V_OrthographicMatrix(const Viewport &viewport, glm::mat4 &out) {
-	out = glm::ortho(0.0f, (float)viewport.width, 0.0f, (float)viewport.height, -1.0f, 1.0f);
-}
-#else
 void V_OrthographicMatrix(float left, float bottom, float width, float height, float near_, float far_, glm::mat4& out) {
 	out = glm::ortho(left, left + width, bottom, bottom + height, near_, far_);
 }
-#endif
 
 void V_OrthoFullScreenMatrix(glm::mat4 &out) {
 	out = glm::ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);

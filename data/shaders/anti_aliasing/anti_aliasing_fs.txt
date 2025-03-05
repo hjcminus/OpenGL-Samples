@@ -1,0 +1,17 @@
+#version 410
+
+layout (location = 0) in  vec2 inTex;
+layout (location = 0) out vec4 outColor;
+
+uniform sampler2D tex;
+uniform vec2 stTexelSize;
+
+void main()
+{
+    vec4 tap0 = texture(tex, inTex);
+    vec4 tap1 = texture(tex, inTex + stTexelSize * vec2(  0.4,  0.9 ));
+    vec4 tap2 = texture(tex, inTex + stTexelSize * vec2( -0.4, -0.9 ));
+    vec4 tap3 = texture(tex, inTex + stTexelSize * vec2( -0.9,  0.4 ));
+    vec4 tap4 = texture(tex, inTex + stTexelSize * vec2(  0.9, -0.4 ));
+    outColor = 0.2 * ( tap0 + tap1 + tap2 + tap3 + tap4 );
+}

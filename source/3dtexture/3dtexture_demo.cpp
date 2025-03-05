@@ -1,17 +1,19 @@
-//2016-10-20 Thu.
+/******************************************************************************
+ * @file	3dtexture_demo.cpp
+ * @brief	project entry point
+ *****************************************************************************/
 
 #include "../common/common.h"
-#include <crtdbg.h>
 
 #include "fluid_system.h"
-#include "volume_render.h"
+#include "volume_renderer.h"
 #include "volume_buffer.h"
 
-Viewport rViewport;
-View rView;
+Viewport	rViewport;
+View		rView;
 
 FluidSystem  *fluidSys;
-VolumeRender *volumeRender;
+VolumeRenderer *volumeRenderer;
 
 bool Setup() {
 	rViewport.x = 0;
@@ -27,15 +29,15 @@ bool Setup() {
 	fluidSys = new FluidSystem(128, 128, 128);
 	fluidSys->Splat();
 
-	volumeRender = new VolumeRender(fluidSys->GetStateBuffer());
-	volumeRender->SetDensity(0.5f);
-	volumeRender->SetBrightness(1.0f);
+	volumeRenderer = new VolumeRenderer(fluidSys->GetStateBuffer());
+	volumeRenderer->SetDensity(0.5f);
+	volumeRenderer->SetBrightness(1.0f);
 
 	return true;
 }
 
 void Shutdown() {
-	delete volumeRender;
+	delete volumeRenderer;
 	delete fluidSys;
 }
 
@@ -54,8 +56,6 @@ static bool drawWireframe = true;
 static bool drawSimple = false;
 
 void Display() {
-	//printf("Display\n");
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glm::mat4 matProj;
@@ -76,24 +76,24 @@ void Display() {
 
 	glViewport(0, 0, rViewport.width, rViewport.height);
 	fluidSys->GetStateBuffer()->SetFiltering(GL_LINEAR);
-	volumeRender->SetVolume(fluidSys->GetStateBuffer());
+	volumeRenderer->SetVolume(fluidSys->GetStateBuffer());
 	
 	if (drawSimple) {
-		volumeRender->DrawSimple(matProj, matModelView);
+		volumeRenderer->DrawSimple(matProj, matModelView);
 	}
 	else {
-		volumeRender->Render(matProj, matModelView);
+		volumeRenderer->Render(matProj, matModelView);
 	}
 
 	if (drawWireframe) {
-		volumeRender->DrawWireframe(matProj, matModelView);
+		volumeRenderer->DrawWireframe(matProj, matModelView);
 	}
 
 	glutSwapBuffers();
 
 	GL_CHECKERROR;
 
-	Sleep(50);
+	Sys_Sleep(17);
 	glutPostRedisplay();
 }
 
@@ -115,7 +115,7 @@ void Special(int key, int x, int y) {
 }
 
 int main(int argc, char **argv) {
-#ifdef _DEBUG
+#if defined(_WIN32) && defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 

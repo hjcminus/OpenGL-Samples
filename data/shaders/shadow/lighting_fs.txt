@@ -1,0 +1,31 @@
+#version 110
+
+uniform sampler2D Base;
+uniform sampler2D Bump;
+uniform sampler2D LightMap;
+uniform vec4      lightColor;
+
+varying   vec2 v_texCoord;
+varying   vec2 v_lmCoord;
+varying   vec3 v_lightVec;
+varying   vec3 v_viewVec;
+
+void main()
+{
+    float atten = 1.0 / (1.0 + dot(v_lightVec, v_lightVec));
+	
+    //normalized vectors needed for the lighting
+    vec3 lightVec = normalize(v_lightVec);
+    vec3 viewVec = normalize(v_viewVec);
+	
+    //sample the textures
+    vec4 base = texture2D(Base, v_texCoord);
+    vec3 bump = normalize(texture2D(Bump, v_texCoord).xyz);
+	
+    //standard Phong lighting
+    float diffuse = max(0.0, dot(lightVec, bump));
+    float specular = pow(max(0.0, dot(reflect(-viewVec, bump), lightVec)), 16.0);
+    vec4 lighting = lightColor * (diffuse * base + specular) * atten;
+    float shadow = texture2D(LightMap, v_lmCoord).x;
+    gl_FragColor = shadow * lighting;
+}

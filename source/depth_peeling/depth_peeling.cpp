@@ -1,36 +1,40 @@
-//2016-02-17 Wed.
+/******************************************************************************
+ * @file	depth_peeling.cpp
+ * @brief   An order-independent transparency (OIT) rendering algorithm 
+ *****************************************************************************/
 
 #include "../common/common.h"
-#include <crtdbg.h>
 
-#define WINDOW_CX 800
-#define WINDOW_CY 600
+// window size
+#define WINDOW_CX	800
+#define WINDOW_CY	600
 
-#define Z_NEAR    1.0f
-#define Z_FAR     1024.0f
+// z range
+#define Z_NEAR		1.0f
+#define Z_FAR		1024.0f
 
 struct RVertex {
-	glm::vec3     pos;
-	glm::vec3     normal;
-	glm::vec3     color;
+	glm::vec3		pos;
+	glm::vec3		normal;
+	glm::vec3		color;
 };
 
 struct RModel {
-	GLuint      vb;
-	GLuint      ib;
-	uint32      indexSize;
-	uint32      indexCount;
+	GLuint			vb;
+	GLuint			ib;
+	uint32_t		indexSize;
+	uint32_t		indexCount;
 };
 
-Viewport rViewport;
-View     rView;
-RModel   rModel;
+Viewport	rViewport;
+View		rView;
+RModel		rModel;
 
-GLuint rFrontFboId[2];
-GLuint rFrontDepthTexId[2];
-GLuint rFrontColorTexId[2];
-GLuint rFrontColorBlenderTexId;
-GLuint rFrontColorBlenderFboId;
+GLuint		rFrontFboId[2];
+GLuint		rFrontDepthTexId[2];
+GLuint		rFrontColorTexId[2];
+GLuint		rFrontColorBlenderTexId;
+GLuint		rFrontColorBlenderFboId;
 
 bool InitDepthPeelingRenderTargets(int viewCX, int viewCY) {
 	glGenTextures(2, rFrontDepthTexId);
@@ -77,7 +81,7 @@ bool InitDepthPeelingRenderTargets(int viewCX, int viewCY) {
 	GL_CheckFramebufferStatus();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	//check error
+	// check error
 	GL_CHECKERROR;
 
 	return true;
@@ -92,32 +96,32 @@ void DeleteDepthPeelingRenderTargets()
 	glDeleteTextures(1, &rFrontColorBlenderTexId);
 }
 
-GLuint rQueryId; //query processed samples count
+GLuint rQueryId; // query processed samples count
 
-//front peeling init program
+// front peeling init program
 GLProgram rFrontPeelingInitProg;
 GLint rFrontPeelingInit_uModelViewMatrix;
 GLint rFrontPeelingInit_uAlpha;
 
-//front peeling peel program
+// front peeling peel program
 GLProgram rFrontPeelingPeelProg;
 GLint rFrontPeelingPeel_uModelViewMatrix;
 GLint rFrontPeelingPeel_uAlpha;
 GLint rFrontPeelingPeel_DepthTex;
 
-//front peeling blend program
+// front peeling blend program
 GLProgram rFrontPeelingBlendProg;
 GLint rFrontPeelingBlend_uModelViewMatrix;
 GLint rFrontPeelingBlend_TempTex;
 
-//front peeling final program
+// front peeling final program
 GLProgram rFrontPeelingFinalProg;
 GLint rFrontPeelingFinal_uModelViewMatrix;
 GLint rFrontPeelingFinal_uBackgroundColor;
 GLint rFrontPeelingFinal_ColorTex;
 
 bool InitOITPrograms() {
-	//front peeling init program
+	// front peeling init program
 	if (!GL_CreateProgram(L"depth_peeling/front_peeling_init_vs.txt", L"depth_peeling/front_peeling_init_fs.txt", rFrontPeelingInitProg)) {
 		return false;
 	}
@@ -130,7 +134,7 @@ bool InitOITPrograms() {
 	rFrontPeelingInit_uModelViewMatrix = glGetUniformLocation(rFrontPeelingInitProg.program, "uModelViewMatrix");
 	rFrontPeelingInit_uAlpha = glGetUniformLocation(rFrontPeelingInitProg.program, "uAlpha");
 
-	//front peeling peel program
+	// front peeling peel program
 	if (!GL_CreateProgram(L"depth_peeling/front_peeling_peel_vs.txt", L"depth_peeling/front_peeling_peel_fs.txt", rFrontPeelingPeelProg)) {
 		return false;
 	}
@@ -144,7 +148,7 @@ bool InitOITPrograms() {
 	rFrontPeelingPeel_uAlpha = glGetUniformLocation(rFrontPeelingPeelProg.program, "uAlpha");
 	rFrontPeelingPeel_DepthTex = glGetUniformLocation(rFrontPeelingPeelProg.program, "DepthTex");
 
-	//front peeling blend program
+	// front peeling blend program
 	if (!GL_CreateProgram(L"depth_peeling/front_peeling_blend_vs.txt", L"depth_peeling/front_peeling_blend_fs.txt", rFrontPeelingBlendProg)) {
 		return false;
 	}
@@ -157,7 +161,7 @@ bool InitOITPrograms() {
 	rFrontPeelingBlend_uModelViewMatrix = glGetUniformLocation(rFrontPeelingBlendProg.program, "uModelViewMatrix");
 	rFrontPeelingBlend_TempTex = glGetUniformLocation(rFrontPeelingBlendProg.program, "TempTex");
 
-	//front peeling final program
+	// front peeling final program
 	if (!GL_CreateProgram(L"depth_peeling/front_peeling_final_vs.txt", L"depth_peeling/front_peeling_final_fs.txt", rFrontPeelingFinalProg)) {
 		return false;
 	}
@@ -181,13 +185,13 @@ void DeleteOITPrograms() {
 	GL_DestroyProgram(rFrontPeelingInitProg);
 }
 
-//base program
+// base program
 GLProgram rBaseProg;
 GLint rBaseProg_uModelViewMatrix;
 GLint rBaseProg_uAlpha;
 
 bool InitBaseProgram() {
-	//front peeling init program
+	// front peeling init program
 	if (!GL_CreateProgram(L"depth_peeling/base_vs.txt", L"depth_peeling/base_fs.txt", rBaseProg)) {
 		return false;
 	}
@@ -208,7 +212,7 @@ void DeleteBaseProgram() {
 }
 
 bool InitModel() {
-	//load test model
+	// load test model
 	Model model;
 	if (!Model_Load(L"LTM1030_RGB.model", &model)) { //star.model teapot.model dragon.model LTM1030_RGB
 		return false;
@@ -232,7 +236,7 @@ void DeleteModel() {
 GLuint rFullScreenVB;
 
 bool InitFullScreenVB(int viewCX, int viewCY) {
-	//fullscreen vertex buffer
+	// fullscreen vertex buffer
 	rFullScreenVB = GL_CreateVertexBuffer(sizeof(glm::vec3), 4, nullptr);
 
 	glBindBuffer(GL_ARRAY_BUFFER, rFullScreenVB);
@@ -318,7 +322,7 @@ void Reshape(int width, int height) {
 		return;
 	}
 
-	//reset viewport
+	// reset viewport
 	rViewport.width = width;
 	rViewport.height = height;
 
@@ -412,7 +416,7 @@ void Display() {
 		glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//1. peel the first layer
+		// 1. peel the first layer
 		glBindFramebuffer(GL_FRAMEBUFFER, rFrontColorBlenderFboId);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -436,9 +440,9 @@ void Display() {
 		}
 		glUseProgram(0);
 
-		//2. depth peeling + blending
+		// 2. depth peeling + blending
 		for (int layer = 1; layer < MAX_PEELED_LAYERS; ++layer) {
-			//2.1 peel the next depth layer
+			// 2.1 peel the next depth layer
 
 			int currId = layer % 2;
 			int prevId = 1 - currId;
@@ -475,7 +479,7 @@ void Display() {
 
 			GL_CHECKERROR;
 
-			//2.2 blend the current layer
+			// 2.2 blend the current layer
 
 			glBindFramebuffer(GL_FRAMEBUFFER, rFrontColorBlenderFboId);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -514,8 +518,8 @@ void Display() {
 			}
 		}
 
-		//3. compositing pass
-		glBindFramebuffer(GL_FRAMEBUFFER, 0); //back to main draw buffer
+		// 3. compositing pass
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to main draw buffer
 		glDrawBuffer(GL_BACK);
 
 		glDisable(GL_DEPTH_TEST);
@@ -566,7 +570,7 @@ void Special(int key, int x, int y) {
 }
 
 int main(int argc, char **argv) {
-#ifdef _DEBUG
+#if defined(_WIN32) && defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 

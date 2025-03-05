@@ -1,28 +1,36 @@
-//2016-01-20 Wed.
+/******************************************************************************
+ * @file	image.cpp
+ * @brief
+ *****************************************************************************/
 
 #include "common.h"
 
+#if defined(__linux__)
+# define BI_RGB        0L
+# define BI_RLE8       1L
+#endif
+
 #pragma pack(push, 1)
 struct bmpfilehead_s {
-	word   bfType;
-	dword  bfSize;
-	word   bfReserved1;
-	word   bfReserved2;
-	dword  bfOffBits;
+	word	bfType;
+	dword	bfSize;
+	word	bfReserved1;
+	word	bfReserved2;
+	dword	bfOffBits;
 };
 
 struct bmpinfohead_s {
-	dword  biSize;
-	int    biWidth;
-	int    biHeight;
-	word   biPlanes;
-	word   biBitCount;
-	dword  biCompression;
-	dword  biSizeImage;
-	int    biXPelsPerMeter;
-	int    biYPelsPerMeter;
-	dword  biClrUsed;
-	dword  biClrImportant;
+	dword	biSize;
+	int		biWidth;
+	int		biHeight;
+	word	biPlanes;
+	word	biBitCount;
+	dword	biCompression;
+	dword	biSizeImage;
+	int		biXPelsPerMeter;
+	int		biYPelsPerMeter;
+	dword	biClrUsed;
+	dword	biClrImportant;
 };
 #pragma pack(pop)
 
@@ -38,7 +46,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 	bmpinfohead_s * infohead = (bmpinfohead_s*)(filehead + 1);
 
 	if (8 == infohead->biBitCount) {
-		if (BI_RGB == infohead->biCompression) { //uncompressed mode
+		if (BI_RGB == infohead->biCompression) { // uncompressed mode
 			int src_line_len = (infohead->biWidth + 3) & ~3;
 
 			int valid_size = sizeof(bmpfilehead_s) + sizeof(bmpinfohead_s) + 4 * 256 + src_line_len * infohead->biHeight;
@@ -73,7 +81,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 				}
 			}
 		}
-		else if (BI_RLE8 == infohead->biCompression) { //http://msdn.microsoft.com/en-us/library/windows/desktop/dd183383%28v=vs.85%29.aspx
+		else if (BI_RLE8 == infohead->biCompression) { // http://msdn.microsoft.com/en-us/library/windows/desktop/dd183383%28v=vs.85%29.aspx
 			image.cx = infohead->biWidth;
 			image.cy = infohead->biHeight;
 			image.bits = 24;
@@ -107,9 +115,9 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 					for (int i = 0; i < (int)runlen; ++i) {
 						byte * dst_clr = dst_line + clrxpos * 3;
 
-						dst_clr[0] = src_clr[2]; //red
-						dst_clr[1] = src_clr[1]; //green
-						dst_clr[2] = src_clr[0]; //blue
+						dst_clr[0] = src_clr[2]; // red channel
+						dst_clr[1] = src_clr[1]; // green channel
+						dst_clr[2] = src_clr[0]; // blue channel
 
 						clrxpos++;
 					}
@@ -123,9 +131,9 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 							byte * src_clr = palette + clridx * 4;
 							byte * dst_clr = dst_line + clrxpos * 3;
 
-							dst_clr[0] = src_clr[2]; //red
-							dst_clr[1] = src_clr[1]; //green
-							dst_clr[2] = src_clr[0]; //blue
+							dst_clr[0] = src_clr[2]; // red channel
+							dst_clr[1] = src_clr[1]; // green channel
+							dst_clr[2] = src_clr[0]; // blue channel
 
 							clrxpos++;
 						}
@@ -133,26 +141,26 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 					}
 					else {
 						switch (byte2) {
-						case 0: //end of line
+						case 0: // end of line
 							line++;
 							dst_line = (byte*)image.pixels + dst_line_len * line;
 							if (clrxpos != infohead->biWidth) {
 								free(image.pixels);
 								image.pixels = nullptr;
 								File_Free(file);
-								//SYS_ERROR(L"bad data\n");
+								// SYS_ERROR(L"bad data\n");
 								return false;
 							}
 							clrxpos = 0;
 							break;
-						case 1: //end of bitmap
+						case 1: // end of bitmap
 							breakloop = true;
 							break;
-						case 2: //Delta.The 2 bytes following the escape contain unsigned values indicating the horizontal and vertical offsets of the next pixel from the current position.
+						case 2: // Delta.The 2 bytes following the escape contain unsigned values indicating the horizontal and vertical offsets of the next pixel from the current position.
 							free(image.pixels);
 							image.pixels = nullptr;
 							File_Free(file);
-							//SYS_ERROR(L"did not know how to handle delta yet\n");
+							// SYS_ERROR(L"did not know how to handle delta yet\n");
 							return false;
 						}
 					}
@@ -161,7 +169,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 		}
 		else {
 			File_Free(file);
-			//SYS_ERROR(L"unsupported compression mode %d\n", infohead->biCompression);
+			// SYS_ERROR(L"unsupported compression mode %d\n", infohead->biCompression);
 			return false;
 		}
 
@@ -172,7 +180,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 		int valid_size = sizeof(bmpfilehead_s) + sizeof(bmpinfohead_s) + src_line_len * infohead->biHeight;
 		if (valid_size > (int)file.original_size) {
 			File_Free(file);
-			//SYS_ERROR(L"bad size\n");
+			// SYS_ERROR(L"bad size\n");
 			return false;
 		}
 
@@ -185,21 +193,21 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 
 		int dst_line_len = infohead->biWidth * 3;
 
-		for (int h = 0; h < infohead->biHeight; ++h) {//OpenGL store bottom row first, same as BMP
+		for (int h = 0; h < infohead->biHeight; ++h) { // OpenGL store bottom row first, same as BMP
 			byte * src_line = src + src_line_len * h;
 			byte * dst_line = (byte*)image.pixels + dst_line_len * h;
 
 			for (int w = 0; w < infohead->biWidth; ++w) {
-				uint16 src_clr = *(uint16*)(src_line + w * 2);
+				uint16_t src_clr = *(uint16_t*)(src_line + w * 2);
 				byte * dst_clr = dst_line + w * 3;
 
 				byte src_b = (byte)(src_clr & 0x001f);
 				byte src_g = (byte)((src_clr & 0x07e0) >> 5);
 				byte src_r = (byte)((src_clr & 0xf800) >> 11);
 
-				dst_clr[0] = src_r; //red
-				dst_clr[1] = src_g; //green
-				dst_clr[2] = src_b; //blue
+				dst_clr[0] = src_r; // red channel
+				dst_clr[1] = src_g; // green channel
+				dst_clr[2] = src_b; // blue channel
 			}
 		}
 	}
@@ -209,7 +217,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 		int valid_size = sizeof(bmpfilehead_s) + sizeof(bmpinfohead_s) + src_line_len * infohead->biHeight;
 		if (valid_size > (int)file.original_size) {
 			File_Free(file);
-			//SYS_ERROR(L"bad size\n");
+			// SYS_ERROR(L"bad size\n");
 			return false;
 		}
 
@@ -222,7 +230,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 
 		int dst_line_len = infohead->biWidth * 3;
 
-		for (int h = 0; h < infohead->biHeight; ++h) { //OpenGL store bottom row first, same as BMP
+		for (int h = 0; h < infohead->biHeight; ++h) { // OpenGL store bottom row first, same as BMP
 			byte * src_line = src + src_line_len * h;
 			byte * dst_line = (byte*)image.pixels + dst_line_len * h;
 
@@ -230,9 +238,9 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 				byte * src_clr = src_line + w * 3;
 				byte * dst_clr = dst_line + w * 3;
 
-				dst_clr[0] = src_clr[2]; //red
-				dst_clr[1] = src_clr[1]; //green
-				dst_clr[2] = src_clr[0]; //blue
+				dst_clr[0] = src_clr[2]; // red channel
+				dst_clr[1] = src_clr[1]; // green channel
+				dst_clr[2] = src_clr[0]; // blue channel
 			}
 		}
 	}
@@ -242,7 +250,7 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 		int valid_size = sizeof(bmpfilehead_s) + sizeof(bmpinfohead_s) + src_line_len * infohead->biHeight;
 		if (valid_size > (int)file.original_size) {
 			File_Free(file);
-			//SYS_ERROR(L"bad size\n");
+			// SYS_ERROR(L"bad size\n");
 			return false;
 		}
 
@@ -255,17 +263,17 @@ bool Image_Load(const wchar_t *fileName, Image &image) {
 
 		int dst_line_len = infohead->biWidth * 4;
 
-		for (int h = 0; h < infohead->biHeight; ++h) { //OpenGL store bottom row first, same as BMP
+		for (int h = 0; h < infohead->biHeight; ++h) { // OpenGL store bottom row first, same as BMP
 			byte * src_line = src + src_line_len * h;
 			byte * dst_line = (byte*)image.pixels + dst_line_len * h;
 
 			for (int w = 0; w < infohead->biWidth; ++w) {
 				byte * src_clr = src_line + w * 4;
 				byte * dst_clr = dst_line + w * 4;
-				dst_clr[0] = src_clr[2]; //red
-				dst_clr[1] = src_clr[1]; //green
-				dst_clr[2] = src_clr[0]; //blue
-				dst_clr[3] = src_clr[3]; //alpha
+				dst_clr[0] = src_clr[2]; // red channel
+				dst_clr[1] = src_clr[1]; // green channel
+				dst_clr[2] = src_clr[0]; // blue channel
+				dst_clr[3] = src_clr[3]; // alpha channel
 			}
 		}
 	}
@@ -319,11 +327,11 @@ bool Image_Save(const wchar_t *fileName, const Image &image) {
 		for (int w = 0; w < image.cx; ++w) {
 			unsigned char * dstclr = dstline + w * bytesPerPixel;
 			const unsigned char * srcclr = srcline + w * bytesPerPixel;
-			dstclr[0] = srcclr[2]; //B
-			dstclr[1] = srcclr[1]; //G
-			dstclr[2] = srcclr[0]; //R
+			dstclr[0] = srcclr[2]; // B
+			dstclr[1] = srcclr[1]; // G
+			dstclr[2] = srcclr[0]; // R
 			if (bytesPerPixel > 3) {
-				dstclr[3] = srcclr[3]; //A
+				dstclr[3] = srcclr[3]; // A
 			}
 		}
 	}

@@ -1,4 +1,7 @@
-//2016-01-20 Wed.
+/******************************************************************************
+ * @file	gl_funcs.cpp
+ * @brief   helper: wrap GL functions
+ *****************************************************************************/
 
 #include "common.h"
 
@@ -11,8 +14,17 @@ GLuint GL_CreateVertexBuffer(size_t vertexSize, size_t vertexCount, void *data) 
 	GLuint obj = 0;
 	glGenBuffers(1, &obj);
 	glBindBuffer(GL_ARRAY_BUFFER, obj);
-	glBufferData(GL_ARRAY_BUFFER, vertexSize * vertexCount, data, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW
-	glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind
+
+	/* glBufferData(GLenum target, GLsizeiptr size, const void * data, GLenum usage);
+		usage:
+	      STATIC
+		    The data store contents will be modified once and used many times.
+	      DYNAMIC
+		    The data store contents will be modified repeatedly and used many times.
+	*/
+
+	glBufferData(GL_ARRAY_BUFFER, vertexSize * vertexCount, data, GL_STATIC_DRAW); // GL_DYNAMIC_DRAW
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind
 	return obj;
 }
 
@@ -21,7 +33,7 @@ GLuint GL_CreateIndexBuffer(size_t indexSize, size_t indexCount, void *data) {
 	glGenBuffers(1, &obj);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexSize * indexCount, data, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); //unbind
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // unbind
 	return obj;
 }
 
@@ -48,7 +60,7 @@ texture
 */
 GLuint GL_CreateTexture(const wchar_t *fileName, bool mipmap) {
 	wchar_t fullFileName[MAX_PATH];
-	wsprintf(fullFileName, L"%s\\%s", TEXTURE_DIR, fileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", TEXTURE_DIR, fileName);
 
 	Image image = { 0 };
 	if (!Image_Load(fullFileName, image)) {
@@ -60,16 +72,16 @@ GLuint GL_CreateTexture(const wchar_t *fileName, bool mipmap) {
 		return 0;
 	}
 
-	//check image size
+	// check image size
 	if (!Math_IsPowerOf2(image.cx) || image.cx < 16 || !Math_IsPowerOf2(image.cy) || image.cy < 16) {
-		//SYS_ERROR(L"invalid image size (%d,%d) in OpenGL 2.0\n", image->mWidth, image->mHeight);
+		// SYS_ERROR(L"invalid image size (%d,%d) in OpenGL 2.0\n", image->mWidth, image->mHeight);
 		Image_Free(image);
 		return 0;
 	}
 
 	GLuint obj = 0;
 
-	//now generate new texture
+	// now generate new texture
 	glGenTextures(1, &obj);
 	glBindTexture(GL_TEXTURE_2D, obj);
 
@@ -82,17 +94,17 @@ GLuint GL_CreateTexture(const wchar_t *fileName, bool mipmap) {
 		if (24 == image.bits) {
 			gluBuild2DMipmaps(GL_TEXTURE_2D, 3, image.cx, image.cy, GL_RGB, GL_UNSIGNED_BYTE, image.pixels);
 		}
-		else { //32
+		else { // 32 bits
 			gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.cx, image.cy, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels);
 		}
 	}
 	else {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		//The first element corresponds to the lower left corner of the texture image
+		// The first element corresponds to the lower left corner of the texture image
 		if (24 == image.bits) {
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.cx, image.cy, 0, GL_RGB, GL_UNSIGNED_BYTE, image.pixels);
 		}
-		else { //32
+		else { // 32 bits
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cx, image.cy, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels);
 		}
 	}
@@ -100,10 +112,10 @@ GLuint GL_CreateTexture(const wchar_t *fileName, bool mipmap) {
 	Image_Free(image);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+
 	return obj;
 }
 
-//2016-10-21 Fri.
 GLuint GL_Create3DTexture(GLint internalformat, int w, int h, int d) {
 	GLuint tex;
 	glGenTextures(1, &tex);
@@ -125,7 +137,7 @@ void GL_DeleteTexture(GLuint &texId) {
 
 GLuint GL_LoadTexture(const wchar_t *fileName, bool mipmap) {
 	wchar_t fullFileName[MAX_PATH];
-	wsprintf(fullFileName, L"%s\\%s", TEXTURE_DIR, fileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", TEXTURE_DIR, fileName);
 
 	Image image = { 0 };
 	if (!Image_Load(fullFileName, image)) {
@@ -137,16 +149,16 @@ GLuint GL_LoadTexture(const wchar_t *fileName, bool mipmap) {
 		return 0;
 	}
 
-	//check image size
+	// check image size
 	if (!Math_IsPowerOf2(image.cx) || image.cx < 16 || !Math_IsPowerOf2(image.cy) || image.cy < 16) {
-		//SYS_ERROR(L"invalid image size (%d,%d) in OpenGL 2.0\n", image->mWidth, image->mHeight);
+		// SYS_ERROR(L"invalid image size (%d,%d) in OpenGL 2.0\n", image->mWidth, image->mHeight);
 		Image_Free(image);
 		return 0;
 	}
 
 	GLuint obj = 0;
 
-	//now generate new texture
+	// now generate new texture
 	glGenTextures(1, &obj);
 	glBindTexture(GL_TEXTURE_2D, obj);
 
@@ -159,17 +171,17 @@ GLuint GL_LoadTexture(const wchar_t *fileName, bool mipmap) {
 		if (24 == image.bits) {
 			gluBuild2DMipmaps(GL_TEXTURE_2D, 3, image.cx, image.cy, GL_RGB, GL_UNSIGNED_BYTE, image.pixels);
 		}
-		else { //32
+		else { // 32 bits
 			gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.cx, image.cy, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels);
 		}
 	}
 	else {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		//The first element corresponds to the lower left corner of the texture image
+		// The first element corresponds to the lower left corner of the texture image
 		if (24 == image.bits) {
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.cx, image.cy, 0, GL_RGB, GL_UNSIGNED_BYTE, image.pixels);
 		}
-		else { //32
+		else { // 32 bits
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cx, image.cy, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels);
 		}
 	}
@@ -177,6 +189,7 @@ GLuint GL_LoadTexture(const wchar_t *fileName, bool mipmap) {
 	Image_Free(image);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+
 	return obj;
 }
 
@@ -208,12 +221,12 @@ static GLuint CreateShader(const wchar_t *fileName, GLenum type) {
 	GLint compileStatus = 0;
 	glGetShaderiv(obj, GL_COMPILE_STATUS, &compileStatus);
 
-	//check compile result
+	// check compile result
 	if (!compileStatus) {
 		GLint infoLogLen = 0;
 		glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &infoLogLen);
 		if (infoLogLen > 1023) {
-			//SYS_ERROR(L"error too long\n");
+			// SYS_ERROR(L"error too long\n");
 			glDeleteShader(obj);
 			return 0;
 		}
@@ -234,10 +247,10 @@ bool GL_CreateProgram(const wchar_t *vsFileName, const wchar_t *fsFileName, GLPr
 
 	program.program = glCreateProgram();
 
-	wsprintf(fullFileName, L"%s\\%s", SHADER_DIR, vsFileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, vsFileName);
 	program.vs = CreateShader(fullFileName, GL_VERTEX_SHADER);
 
-	wsprintf(fullFileName, L"%s\\%s", SHADER_DIR, fsFileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, fsFileName);
 	program.fs = CreateShader(fullFileName, GL_FRAGMENT_SHADER);
 
 	if (!program.fs || !program.vs) {
@@ -259,22 +272,22 @@ bool GL_CreateProgram(const wchar_t *vsFileName, const wchar_t *fsFileName, GLPr
 }
 
 bool GL_CreateProgram(const wchar_t *vsFileName, const wchar_t *tcsFileName, const wchar_t *tesFileName, const wchar_t *fsFileName, GLProgram &program) {
-	memset(&program, 0, sizeof(program));
+	memset(&program, 0, sizeof(program));	// fill zero
 
 	wchar_t fullFileName[MAX_PATH];
 
 	program.program = glCreateProgram();
 
-	wsprintf(fullFileName, L"%s\\%s", SHADER_DIR, vsFileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, vsFileName);
 	program.vs = CreateShader(fullFileName, GL_VERTEX_SHADER);
 
-	wsprintf(fullFileName, L"%s\\%s", SHADER_DIR, tcsFileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, tcsFileName);
 	program.tcs = CreateShader(fullFileName, GL_TESS_CONTROL_SHADER);
 
-	wsprintf(fullFileName, L"%s\\%s", SHADER_DIR, tesFileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, tesFileName);
 	program.tes = CreateShader(fullFileName, GL_TESS_EVALUATION_SHADER);
 
-	wsprintf(fullFileName, L"%s\\%s", SHADER_DIR, fsFileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, fsFileName);
 	program.fs = CreateShader(fullFileName, GL_FRAGMENT_SHADER);
 
 	if (!program.fs || !program.vs || !program.tcs || !program.tes) {
@@ -616,7 +629,7 @@ void GL_DrawFullScreenRect(GLuint vb, bool hasTexCoord) {
 
 /*
 ================================================================================
-framebuffer 2016-10-21 Fri.
+framebuffer
 ================================================================================
 */
 GLuint GL_GenFramebuffer() {
@@ -638,7 +651,6 @@ void GL_UnbindFramebuffer() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-//2016-10-25 Tue.
 void GL_FramebufferTexture(GLenum texTarget, GLuint texId, GLenum attachment, int mipLevel, int zSlice) {
 	if (GL_TEXTURE_1D == texTarget) {
 		glFramebufferTexture1D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_1D, texId, mipLevel);
@@ -662,12 +674,12 @@ void GL_CheckError(const char * file, int line) {
 	if (error) {
 		const char * error_str = nullptr;
 		switch (error) {
-		case GL_INVALID_ENUM: error_str = "GL_INVALID_ENUM"; break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION: error_str = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
-		case GL_INVALID_VALUE: error_str = "GL_INVALID_VALUE"; break;
-		case GL_INVALID_OPERATION: error_str = "GL_INVALID_OPERATION"; break;
-		case GL_OUT_OF_MEMORY: error_str = "GL_OUT_OF_MEMORY"; break;
-		default: error_str = "unknown error"; break;
+			case GL_INVALID_ENUM: error_str = "GL_INVALID_ENUM"; break;
+			case GL_INVALID_FRAMEBUFFER_OPERATION: error_str = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+			case GL_INVALID_VALUE: error_str = "GL_INVALID_VALUE"; break;
+			case GL_INVALID_OPERATION: error_str = "GL_INVALID_OPERATION"; break;
+			case GL_OUT_OF_MEMORY: error_str = "GL_OUT_OF_MEMORY"; break;
+			default: error_str = "unknown error"; break;
 		}
 
 		printf_s("error at %s, %d: %s\n", file, line, error_str);

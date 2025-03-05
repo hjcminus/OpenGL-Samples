@@ -1,7 +1,6 @@
 //2016-02-11 Thu.
 
 #include "../common/common.h"
-#include <crtdbg.h>
 
 //view
 Viewport rViewport;
@@ -537,7 +536,7 @@ static void Special(int key, int x, int y) {
 }
 
 int main(int argc, char **argv) {
-#ifdef _DEBUG
+#if defined(_WIN32) && defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 

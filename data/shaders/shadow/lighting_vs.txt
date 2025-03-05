@@ -1,0 +1,38 @@
+#version 110
+
+uniform vec3 lightPos;
+uniform vec3 camPos;
+uniform mat4 mvp;
+
+attribute vec3 a_pos;
+attribute vec2 a_texCoord;
+attribute vec3 a_tangent;
+attribute vec3 a_binormal;
+attribute vec3 a_normal;
+attribute vec2 a_lmCoord;
+
+varying   vec2 v_texCoord;
+varying   vec2 v_lmCoord;
+varying   vec3 v_lightVec;
+varying   vec3 v_viewVec;
+
+void main()
+{
+    gl_Position = mvp * vec4(a_pos, 1.0);
+    v_texCoord = a_texCoord;
+    v_lmCoord.x = a_lmCoord.x;
+    v_lmCoord.y = a_lmCoord.y;
+	
+    vec3 lightVec = 0.0007 * (lightPos - a_pos);
+    vec3 viewVec  = camPos - a_pos;
+	
+    //transform vectors into tangent space
+    v_lightVec.x = dot(lightVec, a_tangent);
+    v_lightVec.y = dot(lightVec, a_binormal);
+    v_lightVec.z = dot(lightVec, a_normal);
+
+    v_viewVec.x = dot(viewVec, a_tangent);
+    v_viewVec.y = dot(viewVec, a_binormal);
+    v_viewVec.z = dot(viewVec, a_normal);
+}
+

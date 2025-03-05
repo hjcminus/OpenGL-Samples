@@ -1,4 +1,8 @@
-//2016-01-17 Sun.
+/******************************************************************************
+ * @file	model.h
+ * @brief	load test model
+ *          use AMD demo format
+ *****************************************************************************/
 
 #pragma once
 
@@ -8,31 +12,31 @@ Model
 ================================================================================
 */
 struct Batch {
-	uint32  firstIndex;
-	uint32  nIndices;
-	uint32  firstVertex;
-	uint32  nVertices;
+	uint32_t	firstIndex;
+	uint32_t	nIndices;
+	uint32_t	firstVertex;
+	uint32_t	nVertices;
 };
 
 struct ModelHeader {
-	uint32  version;
-	uint32  nBatches;
-	uint32  nVertices;
-	uint32  nIndices;
-	uint32  vertexSize;
-	uint32  indexSize;
+	uint32_t	version;
+	uint32_t	nBatches;
+	uint32_t	nVertices;
+	uint32_t	nIndices;
+	uint32_t	vertexSize;
+	uint32_t	indexSize;
 };
 
 struct Model {
-	uint32  nBatches;
-	uint32  nVertices;
-	uint32  nIndices;
-	uint32  vertexSize;
-	uint32  indexSize;
-	Batch * batches;
-	char *  vertices;
-	char *  indices;
+	uint32_t	nBatches;
+	uint32_t	nVertices;
+	uint32_t	nIndices;
+	uint32_t	vertexSize;
+	uint32_t	indexSize;
+	Batch *		batches;
+	char *		vertices;
+	char *		indices;
 };
 
-bool Model_Load(const wchar_t *fileName, Model *m);
-void Model_Free(Model *m);
+bool	Model_Load(const wchar_t *fileName, Model *m);
+void	Model_Free(Model *m);

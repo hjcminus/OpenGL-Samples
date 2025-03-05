@@ -1,0 +1,11 @@
+#version 110
+
+uniform sampler2D Sampler0;
+varying vec2 v_texCoord;
+
+void main()
+{
+    float depth = texture2D(Sampler0, v_texCoord).x;
+    //gl_FragColor = vec4(pow(depth, 32.0));
+    gl_FragColor = vec4(depth, depth, depth, 1.0);
+}

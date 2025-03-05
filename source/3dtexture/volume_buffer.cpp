@@ -1,4 +1,7 @@
-//2016-10-21 Fri.
+/******************************************************************************
+ * @file	volume_buffer.cpp
+ * @brief
+ *****************************************************************************/
 
 #include "vertex_format.h"
 #include "volume_buffer.h"
@@ -12,16 +15,16 @@ m_fbo(0),
 m_vbo(0),
 m_blendMode(BLEND_NONE)
 {
-	//create texture
+	// create texture
 	m_tex = GL_Create3DTexture(format, m_width, m_height, m_depth);
 
-	//create fbo
+	// create fbo
 	m_fbo = GL_GenFramebuffer();
 	GL_BindFramebuffer(m_fbo);
 	GL_FramebufferTexture(GL_TEXTURE_3D, m_tex, GL_COLOR_ATTACHMENT0, 0, 0);
 	GL_UnbindFramebuffer();
 
-	//create vbo
+	// create vbo
 	glGenBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(PosTex) * 4, nullptr, GL_DYNAMIC_DRAW);
@@ -61,11 +64,11 @@ void VolumeBuffer::RunProgram(GLProgram &prog, bool hasTex) {
 	GL_UniformMatrix4fv(prog, "modelViewProj", mat);
 
 	for (int z = 0; z < m_depth; ++z) {
-		//attach texture slice to FBO
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_3D, m_tex);
+		// attach texture slice to FBO
+		// glActiveTexture(GL_TEXTURE0);
+		// glBindTexture(GL_TEXTURE_3D, m_tex);
 		GL_FramebufferTexture(GL_TEXTURE_3D, m_tex, GL_COLOR_ATTACHMENT0, 0, z);
-		//render
+		// render
 		DrawSlice((z + 0.5f) / (float)m_depth, hasTex);
 	}
 

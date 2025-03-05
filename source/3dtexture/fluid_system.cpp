@@ -1,4 +1,7 @@
-//2016-10-25 Tue.
+/******************************************************************************
+ * @file	fluid_system.cpp
+ * @brief
+ *****************************************************************************/
 
 #include "volume_buffer.h"
 #include "fluid_system.h"
@@ -42,7 +45,7 @@ FluidSystem::~FluidSystem() {
 	delete m_state[0];
 }
 
-//reset the simulation by clearing buffers
+// reset the simulation by clearing buffers
 void FluidSystem::Reset() {
 	GL_UseProgram(m_clear_prog);
 
@@ -55,11 +58,11 @@ void FluidSystem::Reset() {
 	GL_UnuseProgram();
 }
 
-//step the simulation
+// step the simulation
 void FluidSystem::Step(float timestep) {
 	GL_UseProgram(m_copy_prog);
 
-	//copy previous state
+	// copy previous state
 	GL_SetProgramTexture(m_copy_prog, "tex", GL_TEXTURE_3D, m_state[1 - m_current]->GetTexture(), 0);
 	m_prevState->RunProgram(m_copy_prog, true);
 

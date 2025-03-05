@@ -1,7 +1,10 @@
-//2016-02-18 Thu. modified from Nvidia sample: dual_depth_peeling
+/******************************************************************************
+ * @file	depth_peeling.cpp
+ * @brief   modified from Nvidia sample: dual_depth_peeling
+ *          an improved version of depth_peeling OIT rendering algorithm
+ *****************************************************************************/
 
 #include "../common/common.h"
-#include <crtdbg.h>
 
 /*
 ================================================================================
@@ -9,25 +12,25 @@ dual depth peeling
 ================================================================================
 */
 
-//framebuffer
+// framebuffer
 GLuint rDualPeelingSingleFboId;
 GLuint rDualBackBlenderFboId;
 
-//depth texture
+// depth texture
 GLuint rDualDepthTexId[2];
 
-//color texture
+// color texture
 GLuint rDualFrontBlenderTexId[2];
 GLuint rDualBackTempTexId[2];
 GLuint rDualBackBlenderTexId;
 
 bool InitDepthPeelingRenderTargets(int viewCX, int viewCY) {
-	//get texture name
+	// get texture name
 	glGenTextures(2, rDualDepthTexId);
 	glGenTextures(2, rDualFrontBlenderTexId);
 	glGenTextures(2, rDualBackTempTexId);
 	glGenTextures(1, &rDualBackBlenderTexId);
-	//get framebuffer name
+	// get framebuffer name
 	glGenFramebuffers(1, &rDualPeelingSingleFboId);
 	glGenFramebuffers(1, &rDualBackBlenderFboId);
 
@@ -39,9 +42,11 @@ bool InitDepthPeelingRenderTargets(int viewCX, int viewCY) {
 		glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_RECTANGLE, 0, /*GL_FLOAT_RG32_NV*/ GL_RG32F, viewCX, viewCY, 0, GL_RGB, GL_FLOAT, 0); //My: store -max z, max z in R, G channel as float value
+
+		// store -max z, max z in R, G channel as float value to gain nessessary percision
+		glTexImage2D(GL_TEXTURE_RECTANGLE, 0, /*GL_FLOAT_RG32_NV*/ GL_RG32F, viewCX, viewCY, 0, GL_RGB, GL_FLOAT, 0);
 		
-		// 2024.02.04 Sun. GL_FLOAT_RG32_NV not supported by AMD, use GL_RG32F instead
+		// GL_FLOAT_RG32_NV not supported by AMD, use GL_RG32F instead
 
 		GL_CHECKERROR;
 
@@ -75,7 +80,7 @@ bool InitDepthPeelingRenderTargets(int viewCX, int viewCY) {
 
 	GL_CHECKERROR;
 
-	//seup framebuffers
+	// seup framebuffers
 	glBindFramebuffer(GL_FRAMEBUFFER, rDualPeelingSingleFboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, rDualDepthTexId[0], 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, rDualFrontBlenderTexId[0], 0);
@@ -106,30 +111,30 @@ void DeleteDepthPeelingRenderTargets()
 	glDeleteTextures(2, rDualDepthTexId);
 }
 
-//dual peeling init program
+// dual peeling init program
 GLProgram rDualPeelingInitProg;
 GLint rDualPeelingInit_uModelViewMatrix;
 
-//dual peeling peel program
+// dual peeling peel program
 GLProgram rDualPeelingPeelProg;
 GLint rDualPeelingPeel_uModelViewMatrix;
 GLint rDualPeelingPeel_DepthBlenderTex;
 GLint rDualPeelingPeel_FrontBlenderTex;
 GLint rDualPeelingPeel_Alpha;
 
-//dual peeling blend program
+// dual peeling blend program
 GLProgram rDualPeelingBlendProg;
 GLint rDualPeelingBlend_uModelViewMatrix;
 GLint rDualPeelingBlend_TempTex;
 
-//dual peeling final program
+// dual peeling final program
 GLProgram rDualPeelingFinalProg;
 GLint rDualPeelingFinal_uModelViewMatrix;
 GLint rDualPeelingFinal_FrontBlenderTex;
 GLint rDualPeelingFinal_BackBlenderTex;
 
 bool InitDepthPeelingPrograms() {
-	//dual peeling init program
+	// dual peeling init program
 	if (!GL_CreateProgram(L"dual_depth_peeling/dual_peeling_init_vs.txt", L"dual_depth_peeling/dual_peeling_init_fs.txt", rDualPeelingInitProg)) {
 		return false;
 	}
@@ -141,7 +146,7 @@ bool InitDepthPeelingPrograms() {
 
 	rDualPeelingInit_uModelViewMatrix = glGetUniformLocation(rDualPeelingInitProg.program, "uModelViewMatrix");
 
-	//dual peeling peel program
+	// dual peeling peel program
 	if (!GL_CreateProgram(L"dual_depth_peeling/dual_peeling_peel_vs.txt", L"dual_depth_peeling/dual_peeling_peel_fs.txt", rDualPeelingPeelProg)) {
 		return false;
 	}
@@ -156,7 +161,7 @@ bool InitDepthPeelingPrograms() {
 	rDualPeelingPeel_FrontBlenderTex = glGetUniformLocation(rDualPeelingPeelProg.program, "FrontBlenderTex");
 	rDualPeelingPeel_Alpha = glGetUniformLocation(rDualPeelingPeelProg.program, "Alpha");
 
-	//dual peeling blend program
+	// dual peeling blend program
 	if (!GL_CreateProgram(L"dual_depth_peeling/dual_peeling_blend_vs.txt", L"dual_depth_peeling/dual_peeling_blend_fs.txt", rDualPeelingBlendProg)) {
 		return false;
 	}
@@ -169,7 +174,7 @@ bool InitDepthPeelingPrograms() {
 	rDualPeelingBlend_uModelViewMatrix = glGetUniformLocation(rDualPeelingBlendProg.program, "uModelViewMatrix");
 	rDualPeelingBlend_TempTex = glGetUniformLocation(rDualPeelingBlendProg.program, "TempTex");
 
-	//dual peeling final program
+	// dual peeling final program
 	if (!GL_CreateProgram(L"dual_depth_peeling/dual_peeling_final_vs.txt", L"dual_depth_peeling/dual_peeling_final_fs.txt", rDualPeelingFinalProg)) {
 		return false;
 	}
@@ -204,7 +209,7 @@ GLint rBaseProg_uModelViewMatrix;
 GLint rBaseProg_uAlpha;
 
 bool InitBaseProgram() {
-	//front peeling init program
+	// front peeling init program
 	if (!GL_CreateProgram(L"dual_depth_peeling/base_vs.txt", L"dual_depth_peeling/base_fs.txt", rBaseProg)) {
 		return false;
 	}
@@ -236,7 +241,7 @@ ModelBuffer rModel;
 float       rAlpha = 0.3f;
 bool        rUseOQ = true;
 int         rNumPass = 4;
-GLuint      rQueryId; //query processed samples count
+GLuint      rQueryId; // query processed samples count
 GLuint      rFullScreenVB;
 
 bool Setup() {
@@ -372,12 +377,12 @@ void Display_DualDepthPeeling() {
 	// Render targets 1 and 2 store the front and back colors
 	// Clear to 0.0 and use MAX blending to filter written color
 	// At most one front color and one back color can be written every pass
-	glDrawBuffers(2, &DRAW_BUFFERS[1]); //clear buffer 1, 2
+	glDrawBuffers(2, &DRAW_BUFFERS[1]); // clear buffer 1, 2
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// Render target 0 stores (-minDepth, maxDepth, alphaMultiplier)
-	glDrawBuffer(DRAW_BUFFERS[0]); //draw to buffer 0
+	glDrawBuffer(DRAW_BUFFERS[0]); // draw to buffer 0
 	glClearColor(-DEFAULT_MAX_DEPTH, -DEFAULT_MAX_DEPTH, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBlendEquation(GL_MAX);
@@ -540,7 +545,7 @@ void Special(int key, int x, int y) {
 }
 
 int main(int argc, char **argv) {
-#ifdef _DEBUG
+#if defined(_WIN32) && defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 

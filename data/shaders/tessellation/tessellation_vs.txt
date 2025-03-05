@@ -1,0 +1,33 @@
+/* // 2024.02.04 Sun. could not compile in AMD
+#version 410
+
+layout (location = 0) in  vec3 inPos;
+layout (location = 1) in  vec3 inNormal;
+layout (location = 0) out  vec3 outPos;
+layout (location = 1) out  vec3 outNormal;
+
+void main()
+{
+    gl_Position = vec4(inPos, 1.0);
+    outPos = inPos;
+    outNormal = inNormal;
+}
+*/
+
+#version 410
+
+out VS_OUT
+{
+    vec3 pos;
+	vec3 norm;
+} tcs_in;
+
+layout (location = 0) in  vec3 inPos;
+layout (location = 1) in  vec3 inNormal;
+
+void main()
+{
+    gl_Position = vec4(inPos, 1.0);
+    tcs_in.pos = inPos;
+    tcs_in.norm = inNormal;
+}

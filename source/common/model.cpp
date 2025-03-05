@@ -1,4 +1,7 @@
-//2016-01-17 Sun.
+/******************************************************************************
+ * @file	model.cpp
+ * @brief
+ *****************************************************************************/
 
 #include "common.h"
 
@@ -9,7 +12,7 @@ Model
 */
 bool Model_Load(const wchar_t *fileName, Model *m) {
 	wchar_t fullFileName[MAX_PATH];
-	wsprintf(fullFileName, L"%s\\%s", MODEL_DIR, fileName);
+	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", MODEL_DIR, fileName);
 
 	FILE *file = nullptr;
 	_wfopen_s(&file, fullFileName, L"rb");

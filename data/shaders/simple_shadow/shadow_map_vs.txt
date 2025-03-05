@@ -1,0 +1,10 @@
+#version 110
+
+uniform mat4  WorldTransformMatrix;
+
+attribute vec3  a_pos;
+
+void main()
+{
+    gl_Position = WorldTransformMatrix * vec4(a_pos, 1.0);
+}

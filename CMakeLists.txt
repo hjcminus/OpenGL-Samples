@@ -6,11 +6,24 @@ project (gl_samples
 
 set(CMAKE_CXX_STANDARD 17)
 
+if (CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Debug")
+endif ()
+
+message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG)
+	add_definitions(-D_DEBUG)
+    message("Set cmake debug")
+endif ()
+
+
 # set output binary file directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
-source_group(TREE ${PROJECT_BINARY_DIR})
+# source_group(TREE ${PROJECT_BINARY_DIR})
 
 # add options defined in freeglut-3.6.0/CMakeLists.txt
 option(FREEGLUT_BUILD_SHARED_LIBS "Build FreeGLUT shared library." ON)
@@ -29,6 +42,10 @@ add_definitions(-DGLEW_USE_STATIC_LIBS)
 add_subdirectory(third_party/glew-2.1.0/build/cmake)
 add_subdirectory(source/common)
 add_subdirectory(source/glow)
+add_subdirectory(source/anti_aliasing)
 add_subdirectory(source/depth_peeling)
 add_subdirectory(source/dual_depth_peeling)
 add_subdirectory(source/3dtexture)
+add_subdirectory(source/simple_shadow)
+add_subdirectory(source/shadow)
+add_subdirectory(source/tessellation)
