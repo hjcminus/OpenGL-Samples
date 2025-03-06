@@ -25,19 +25,6 @@ static_assert(sizeof(Vertex) == 64, "bad size of Vertex");
 
 static bool Setup();
 static void Shutdown();
-static void OnReshape(int width, int height);
-static void OnMouse(int button, int state, int x, int y);
-static void OnMotion(int x, int y);
-static void OnMouseWheel(int wheel, int direction, int x, int y);
-static void OnSpecial(int key, int x, int y);
-static void OnSpecialUp(int key, int x, int y);
-static void OnKeyboard(unsigned char key, int x, int y);
-static void OnKeyboardUp(unsigned char key, int x, int y);
-static void OnIdle();
-static void OnDisplay();
-static void OnTime(int value);
-static void OnClose();
-
 static void Reshape(int width, int height);
 static void Display();
 static void Special(int key, int x, int y);
@@ -49,9 +36,8 @@ int main(int argc, char **argv) {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	/*
 	ComParam param;
-	param.title = "Simple Shadow";
+	param.title = TITLE;
 	param.windowCX = WINDOW_CX;
 	param.windowCY = WINDOW_CY;
 	param.view = &rView;
@@ -62,46 +48,6 @@ int main(int argc, char **argv) {
 	param.Special = Special;
 
 	Com_Run(argc, argv, param);
-	*/
-
-
-	//*
-	//Com_Init();
-
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-
-	int screen_cx = glutGet(GLUT_SCREEN_WIDTH);
-	int screen_cy = glutGet(GLUT_SCREEN_HEIGHT);
-
-	int pos_x = (screen_cx - WINDOW_CX) >> 1;
-	int pos_y = (screen_cy - WINDOW_CY) >> 1;
-
-	glutInitWindowPosition(pos_x, pos_y);
-	glutInitWindowSize(WINDOW_CX, WINDOW_CY);
-	glutCreateWindow(TITLE);
-
-	if (GLEW_OK != glewInit()) {
-		return 1;
-	}
-
-	Setup();
-	
-	// init callback functions
-	glutReshapeFunc(OnReshape);
-	glutMouseFunc(OnMouse);
-	glutMotionFunc(OnMotion);
-	glutMouseWheelFunc(OnMouseWheel);
-	glutSpecialFunc(OnSpecial);
-	glutSpecialUpFunc(OnSpecialUp);
-	glutKeyboardFunc(OnKeyboard);
-	glutKeyboardUpFunc(OnKeyboardUp);
-	glutIdleFunc(OnIdle);
-	glutDisplayFunc(OnDisplay);
-	glutCloseFunc(OnClose);
-
-	glutMainLoop();
-	//*/
 
 	return 0;
 }
@@ -167,8 +113,6 @@ LightModel rLightModel[LIGHT_COUNT];
 int viewCX = WINDOW_CX;
 int viewCY = WINDOW_CY;
 
-static void UpdateView(float deltaYaw, float deltaPitch, int forward, int right);
-
 static bool Setup() {
 	rViewport.x = 0;
 	rViewport.y = 0;
@@ -177,17 +121,8 @@ static bool Setup() {
 	rViewport.zNear = 1.0f;
 	rViewport.zFar = 4096.0f;
 
-	rView.pos.x =  860.0f;
-	rView.pos.y = -200.0f;
-	rView.pos.z =  100.0f;
-
-	// rView.target = rView.pos + glm::vec3(0.0f, 0.0f, -1.0f);
-	rView.forward.x = 0.0f;
-	rView.forward.y = 0.0f;
-	rView.forward.z = -1.0f;
-	rView.up.x = 0.0f;
-	rView.up.y = 1.0f;
-	rView.up.z = 0.0f;
+	V_InitView(rView, V_VIEW_MOVING_CAMERA,
+		glm::vec3(860.0f, -200.0f, 100.0f), 115.0, 5.0);
 
 	// Set up the lights
 	lights[0].x = 200.0f;
@@ -287,8 +222,6 @@ static bool Setup() {
 	rLightModel[0].vb = GL_CreateVertexBuffer(sizeof(LightModelVertex), 4, nullptr);
 	rLightModel[1].vb = GL_CreateVertexBuffer(sizeof(LightModelVertex), 4, nullptr);
 
-	UpdateView(90.0f, -10.0f, 0, 0);
-
 	return true;
 }
 
@@ -308,8 +241,6 @@ static void Shutdown() {
 
 	GL_DestroyProgram(rProgram[R_PROGRAM_LIGHTING]);
 	GL_DestroyProgram(rProgram[R_PROGRAM_AMBIENT]);
-
-	////Com_Shutdown();
 }
 
 static void Reshape(int width, int height) {
@@ -317,11 +248,29 @@ static void Reshape(int width, int height) {
 	rViewport.height = height;
 }
 
+void DrawAmbient(const glm::mat4& mvpMatrix);
+void DrawLight(const glm::mat4& mvpMatrix);
+void DrawLightModel(const glm::mat4& mvpMatrix);
+
 static void Display() {
+	glViewport(rViewport.x, rViewport.y, rViewport.width, rViewport.height);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	//setup matrix
+	glm::mat4 projectionMatrix;
+	V_PerspectiveMatrix(rViewport, 45.0f, projectionMatrix);
+
+	glm::mat4 viewMatrix;
+	V_ViewMatrix(rView, viewMatrix);
+
+	glm::mat4 mvpMatrix = projectionMatrix * viewMatrix;
+
+	DrawAmbient(mvpMatrix);
+	DrawLight(mvpMatrix);
+	DrawLightModel(mvpMatrix);
+
+	glutSwapBuffers();
 }
-
-
 
 static int rCursorDeltaX;
 static int rCursorDeltaY;
@@ -345,268 +294,6 @@ static void Special(int key, int x, int y) {
 	case GLUT_KEY_RIGHT:
 		rRight = 1;
 		break;
-	}
-}
-
-#if 1
-static void UpdateView(float deltaYaw, float deltaPitch, int forward, int right) {
-
-	//translation
-	//glm::vec3 vForward = rView.target - rView.pos;
-	glm::vec3 vForward = rView.forward;
-	vForward = glm::normalize(vForward);
-
-	rView.pos.x = rView.pos.x + vForward.x * forward * MOVING_SPEED;
-	rView.pos.y = rView.pos.y + vForward.y * forward * MOVING_SPEED;
-	rView.pos.z = rView.pos.z + vForward.z * forward * MOVING_SPEED;
-
-	glm::vec3 vRight = glm::cross(vForward, rView.up);
-	vRight = glm::normalize(vRight);
-
-	rView.pos.x = rView.pos.x + vRight.x * right * MOVING_SPEED;
-	rView.pos.y = rView.pos.y + vRight.y * right * MOVING_SPEED;
-	rView.pos.z = rView.pos.z + vRight.z * right * MOVING_SPEED;
-
-	//rotation
-	glm::vec4 v4Forward = glm::vec4(vForward, 1.0f);
-	glm::vec4 v4Right   = glm::vec4(vRight, 1.0f);
-
-	static float total_yaw = 0.0f;
-	static float total_pitch = 0.0f;
-
-	total_yaw += deltaYaw;
-	if (total_yaw > 360.0f) {
-		total_yaw -= 360.0f;
-	}
-	if (total_yaw < 0.0f) {
-		total_yaw += 360.0f;
-	}
-
-	total_pitch += deltaPitch;
-	if (total_pitch > 70.0f) {
-		total_pitch = 70.0f;
-	}
-	if (total_pitch < -70.0f) {
-		total_pitch = -70.0f;
-	}
-
-	glm::vec4 standard_forward = glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
-	glm::vec4 standard_right   = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
-	glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), Math_DegToRad(total_yaw), rView.up);
-
-	standard_forward = rotationMatrix * standard_forward;
-	standard_right   = rotationMatrix * standard_right;
-
-	vRight = glm::vec3(standard_right.x, standard_right.y, standard_right.z);
-
-	rotationMatrix = glm::rotate(glm::mat4(1.0f), Math_DegToRad(total_pitch), vRight);
-
-	standard_forward = rotationMatrix * standard_forward;
-
-	vForward.x = standard_forward.x;
-	vForward.y = standard_forward.y;
-	vForward.z = standard_forward.z;
-	vForward = glm::normalize(vForward);
-
-	//rView.target = rView.pos + vForward;
-	rView.forward = vForward;
-
-	//printf("%f,%f,%f:%f,%f,%f:%f,%f,%f\n", rView.pos.x, rView.pos.y, rView.pos.z, rView.target.x, rView.target.y, rView.target.z, rView.up.x, rView.up.y, rView.up.z);
-
-	glutPostRedisplay();
-}
-#else
-static void UpdateView(int cursorDeltaX, int cursorDeltaY, int forward, int right) {
-	//translation
-	glm::vec3 vForward = rView.target - rView.pos;
-	vForward = glm::normalize(vForward);
-
-	rView.pos.x = rView.pos.x + vForward.x * forward * MOVING_SPEED;
-	rView.pos.y = rView.pos.y + vForward.y * forward * MOVING_SPEED;
-	rView.pos.z = rView.pos.z + vForward.z * forward * MOVING_SPEED;
-
-	glm::vec3 vRight = glm::cross(vForward, rView.up);
-	vRight = glm::normalize(vRight);
-	
-	rView.pos.x = rView.pos.x + vRight.x * right * MOVING_SPEED;
-	rView.pos.y = rView.pos.y + vRight.y * right * MOVING_SPEED;
-	rView.pos.z = rView.pos.z + vRight.z * right * MOVING_SPEED;
-
-	//rotation
-	glm::vec4 v4Forward = glm::vec4(vForward, 1.0f);
-	glm::vec4 v4Right   = glm::vec4(vRight, 1.0f);
-
-	float yaw = Math_DegToRad((float)-cursorDeltaX * CURSOR_ROTATION_SCALE);
-	float pitch = Math_DegToRad((float)-cursorDeltaY * CURSOR_ROTATION_SCALE);
-
-	glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), yaw, rView.up);
-
-	v4Forward = rotationMatrix * v4Forward;
-	v4Right   = rotationMatrix * v4Right;
-
-	vRight.x = v4Right.x;
-	vRight.y = v4Right.y;
-	vRight.z = v4Right.z;
-
-	rotationMatrix = glm::rotate(glm::mat4(1.0f), pitch, vRight);
-
-	glm::vec4 v4Up = glm::vec4(rView.up, 1.0f);
-
-	v4Forward = rotationMatrix * v4Forward;
-	v4Up = rotationMatrix * v4Up;
-
-	vForward.x = v4Forward.x;
-	vForward.y = v4Forward.y;
-	vForward.z = v4Forward.z;
-	vForward = glm::normalize(vForward);
-
-	rView.up.x = v4Up.x;
-	rView.up.y = v4Up.y;
-	rView.up.z = v4Up.z;
-	rView.up = glm::normalize(rView.up);
-	rView.target = rView.pos + vForward;
-
-	//printf("%f,%f,%f:%f,%f,%f:%f,%f,%f\n", rView.pos.x, rView.pos.y, rView.pos.z, rView.target.x, rView.target.y, rView.target.z, rView.up.x, rView.up.y, rView.up.z);
-
-	glutPostRedisplay();
-}
-#endif
-
-static void OnReshape(int width, int height) {
-	rViewport.width = width;
-	rViewport.height = height;
-}
-
-static bool leftButtonDown;
-static int  cursorPosX;
-static int  cursorPosY;
-static int  previousPosX;
-static int  previousPosY;
-
-static void OnMouse(int button, int state, int x, int y) {
-	if (GLUT_LEFT_BUTTON == button) {
-		if (GLUT_DOWN == state) {
-			leftButtonDown = true;
-			cursorPosX = x;
-			cursorPosY = y;
-			previousPosX = x;
-			previousPosY = y;
-		}
-		else if (GLUT_UP == state) {
-			leftButtonDown = false;
-			return;
-		}
-	}
-}
-
-static void OnMotion(int x, int y) {
-	cursorPosX = x;
-	cursorPosY = y;
-}
-
-static void OnMouseWheel(int wheel, int direction, int x, int y) {
-	UpdateView(0, 0, direction * 10, 0);
-}
-
-static void OnSpecial(int key, int x, int y) {
-	switch (key) {
-	case GLUT_KEY_UP:
-		rForward = 1;
-		break;
-	case GLUT_KEY_DOWN:
-		rForward = -1;
-		break;
-	case GLUT_KEY_LEFT:
-		rRight = -1;
-		break;
-	case GLUT_KEY_RIGHT:
-		rRight = 1;
-		break;
-	}
-}
-
-static void OnSpecialUp(int key, int x, int y) {
-	switch (key) {
-	case GLUT_KEY_UP:
-	case GLUT_KEY_DOWN:
-		rForward = 0;
-		break;
-	case GLUT_KEY_LEFT:
-	case GLUT_KEY_RIGHT:
-		rRight = 0;
-		break;
-	}
-}
-
-static void OnKeyboard(unsigned char key, int x, int y) {
-	switch (key) {
-	case 'w':
-	case 'W':
-		rForward = 1;
-		break;
-	case 's':
-	case 'S':
-		rForward = -1;
-		break;
-	case 'a':
-	case 'A':
-		rRight = -1;
-		break;
-	case 'd':
-	case 'D':
-		rRight = 1;
-		break;
-	}
-}
-
-static void OnKeyboardUp(unsigned char key, int x, int y) {
-	switch (key) {
-	case 'w':
-	case 'W':
-	case 's':
-	case 'S':
-		rForward = 0;
-		break;
-	case 'a':
-	case 'A':
-	case 'd':
-	case 'D':
-		rRight = 0;
-		break;
-	}
-}
-
-static void OnIdle() {
-	static uint32_t time = 0;
-	if (!time) {
-		time = Com_GetMS();
-	}
-	else {
-		uint32_t current = Com_GetMS();
-		if (current - time >= 16) {
-			rCursorDeltaX = cursorPosX - previousPosX;
-			rCursorDeltaY = cursorPosY - previousPosY;
-
-			previousPosX = cursorPosX;
-			previousPosY = cursorPosY;
-
-			int deltaX = 0;
-			int deltaY = 0;
-
-			if (leftButtonDown) {
-				deltaX = rCursorDeltaX;
-				deltaY = rCursorDeltaY;
-			}
-			
-			if (deltaX || deltaY || rForward || rRight) {
-				float deltaYaw = (float)-deltaX * CURSOR_ROTATION_SCALE;
-				float deltaPitch = (float)-deltaY * CURSOR_ROTATION_SCALE;
-
-				UpdateView(deltaYaw, deltaPitch, rForward, rRight);
-			}
-			time = current;
-		}
 	}
 }
 
@@ -769,32 +456,4 @@ void DrawLightModel(const glm::mat4 &mvpMatrix) {
 	glDisableVertexAttribArray(1);
 
 	glUseProgram(0);
-}
-
-static void OnDisplay() {
-	glViewport(rViewport.x, rViewport.y, rViewport.width, rViewport.height);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//setup matrix
-	glm::mat4 projectionMatrix;
-	V_PerspectiveMatrix(rViewport, 45.0f, projectionMatrix);
-
-	glm::mat4 viewMatrix;
-	V_ViewMatrix(rView, viewMatrix);
-
-	glm::mat4 mvpMatrix = projectionMatrix * viewMatrix;
-	
-	DrawAmbient(mvpMatrix);
-	DrawLight(mvpMatrix);
-	DrawLightModel(mvpMatrix);
-
-	glutSwapBuffers();
-}
-
-static void OnTime(int value) {
-
-}
-
-static void OnClose() {
-	Shutdown();
 }

@@ -1,4 +1,4 @@
-#version 110 //2016-03-08 Tue.
+#version 110
 
 uniform   mat4   WorldTransformMatrix;
 uniform   mat4   WorldMatrix;
