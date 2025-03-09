@@ -248,9 +248,9 @@ static void Reshape(int width, int height) {
 	rViewport.height = height;
 }
 
-void DrawAmbient(const glm::mat4& mvpMatrix);
-void DrawLight(const glm::mat4& mvpMatrix);
-void DrawLightModel(const glm::mat4& mvpMatrix);
+static void DrawAmbient(const glm::mat4& mvpMatrix);
+static void DrawLight(const glm::mat4& mvpMatrix);
+static void DrawLightModel(const glm::mat4& mvpMatrix);
 
 static void Display() {
 	glViewport(rViewport.x, rViewport.y, rViewport.width, rViewport.height);

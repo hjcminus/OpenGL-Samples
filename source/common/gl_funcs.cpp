@@ -60,7 +60,14 @@ texture
 */
 GLuint GL_CreateTexture(const wchar_t *fileName, bool mipmap) {
 	wchar_t fullFileName[MAX_PATH];
+
+#if defined(_MSC_VER)
 	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", TEXTURE_DIR, fileName);
+#endif
+
+#if defined(__GNUC__)
+   swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", TEXTURE_DIR, fileName);
+#endif
 
 	Image image = { 0 };
 	if (!Image_Load(fullFileName, image)) {
@@ -247,11 +254,21 @@ bool GL_CreateProgram(const wchar_t *vsFileName, const wchar_t *fsFileName, GLPr
 
 	program.program = glCreateProgram();
 
+#if defined(_MSC_VER)
 	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, vsFileName);
 	program.vs = CreateShader(fullFileName, GL_VERTEX_SHADER);
 
 	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, fsFileName);
 	program.fs = CreateShader(fullFileName, GL_FRAGMENT_SHADER);
+#endif
+
+#if defined(__GNUC__)
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", SHADER_DIR, vsFileName);
+	program.vs = CreateShader(fullFileName, GL_VERTEX_SHADER);
+
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", SHADER_DIR, fsFileName);
+	program.fs = CreateShader(fullFileName, GL_FRAGMENT_SHADER);
+#endif
 
 	if (!program.fs || !program.vs) {
 		if (program.fs) {
@@ -278,6 +295,7 @@ bool GL_CreateProgram(const wchar_t *vsFileName, const wchar_t *tcsFileName, con
 
 	program.program = glCreateProgram();
 
+#if defined(_MSC_VER)
 	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, vsFileName);
 	program.vs = CreateShader(fullFileName, GL_VERTEX_SHADER);
 
@@ -289,6 +307,21 @@ bool GL_CreateProgram(const wchar_t *vsFileName, const wchar_t *tcsFileName, con
 
 	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", SHADER_DIR, fsFileName);
 	program.fs = CreateShader(fullFileName, GL_FRAGMENT_SHADER);
+#endif
+
+#if defined(__GNUC__)
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", SHADER_DIR, vsFileName);
+	program.vs = CreateShader(fullFileName, GL_VERTEX_SHADER);
+
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", SHADER_DIR, tcsFileName);
+	program.tcs = CreateShader(fullFileName, GL_TESS_CONTROL_SHADER);
+
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", SHADER_DIR, tesFileName);
+	program.tes = CreateShader(fullFileName, GL_TESS_EVALUATION_SHADER);
+
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", SHADER_DIR, fsFileName);
+	program.fs = CreateShader(fullFileName, GL_FRAGMENT_SHADER);
+#endif
 
 	if (!program.fs || !program.vs || !program.tcs || !program.tes) {
 		if (program.fs) {

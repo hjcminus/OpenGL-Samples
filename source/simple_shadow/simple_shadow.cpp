@@ -449,6 +449,7 @@ static bool Setup() {
 
 	// scene program
 	if (!GL_CreateProgram(L"simple_shadow/scene_vs.txt", L"simple_shadow/scene_fs.txt", rProgram[PROGRAM_SCENE])) {
+		printf("load scene shaders error\n");
 		return false;
 	}
 
@@ -457,6 +458,7 @@ static bool Setup() {
 
 	if (!GL_LinkProgram(rProgram[PROGRAM_SCENE])) {
 		GL_DestroyProgram(rProgram[PROGRAM_SCENE]);
+		printf("link scene program error\n");
 		return false;
 	}
 
@@ -469,6 +471,7 @@ static bool Setup() {
 
 	// shadow program
 	if (!GL_CreateProgram(L"simple_shadow/shadow_map_vs.txt", L"simple_shadow/shadow_map_fs.txt", rProgram[PROGRAM_SHADOWMAP])) {
+		printf("load shadow_map shaders error\n");
 		return false;
 	}
 
@@ -476,6 +479,7 @@ static bool Setup() {
 
 	if (!GL_LinkProgram(rProgram[PROGRAM_SHADOWMAP])) {
 		GL_DestroyProgram(rProgram[PROGRAM_SHADOWMAP]);
+		printf("link shadow_map program error\n");
 		return false;
 	}
 
@@ -483,6 +487,7 @@ static bool Setup() {
 
 	// overlay program
 	if (!GL_CreateProgram(L"simple_shadow/overlay_vs.txt", L"simple_shadow/overlay_fs.txt", rProgram[PROGRAM_OVERLAY])) {
+		printf("load overlay shaders error\n");
 		return false;
 	}
 
@@ -491,6 +496,7 @@ static bool Setup() {
 
 	if (!GL_LinkProgram(rProgram[PROGRAM_OVERLAY])) {
 		GL_DestroyProgram(rProgram[PROGRAM_OVERLAY]);
+		printf("link overlay program error\n");
 		return false;
 	}
 
@@ -500,6 +506,7 @@ static bool Setup() {
 	// load model
 	Model model;
 	if (!Model_Load(L"star.model", &model)) { //star.model teapot.model dragon.model
+	    printf("could load model\n");
 		return false;
 	}
 
@@ -554,6 +561,7 @@ static bool Setup() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if (!CreateFrameBuffer(SHADOW_MAP_DIM, SHADOW_MAP_DIM, rFrameBuffer)) {
+		printf("Could not create framebuffer\n");
 		return false;
 	}
 

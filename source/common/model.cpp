@@ -12,7 +12,14 @@ Model
 */
 bool Model_Load(const wchar_t *fileName, Model *m) {
 	wchar_t fullFileName[MAX_PATH];
+
+#if defined(_MSC_VER)
 	swprintf_s(fullFileName, MAX_PATH, L"%s/%s", MODEL_DIR, fileName);
+#endif
+
+#if defined(__GNUC__)
+	swprintf_s(fullFileName, MAX_PATH, L"%ls/%ls", MODEL_DIR, fileName);
+#endif
 
 	FILE *file = nullptr;
 	_wfopen_s(&file, fullFileName, L"rb");

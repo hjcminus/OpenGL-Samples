@@ -100,14 +100,24 @@ void Com_Run(int argc, char **argv, const ComParam &param) {
 
 	mbstowcs(buffer1, argv[0], MAX_PATH);
 
-	ExtractParentDir(buffer1, buffer2); // .\gmake2\bin
-	ExtractParentDir(buffer2, buffer1); // .\gmake2
-	ExtractParentDir(buffer1, buffer2); // .
+	if (buffer1[0] == L'/') {
+		ExtractParentDir(buffer1, buffer2); // .\gmake2\bin
+		ExtractParentDir(buffer2, buffer1); // .\gmake2
+		ExtractParentDir(buffer1, buffer2); // .
 
-	swprintf_s(dataDir, MAX_PATH, L"%s/data", buffer2);
-	swprintf_s(textureDir, MAX_PATH, L"%s/data/textures", buffer2);
-	swprintf_s(modelDir, MAX_PATH, L"%s/data/models", buffer2);
-	swprintf_s(shaderDir, MAX_PATH, L"%s/data/shaders", buffer2);
+		swprintf_s(dataDir, MAX_PATH, L"%ls/data", buffer2);
+		swprintf_s(textureDir, MAX_PATH, L"%ls/data/textures", buffer2);
+		swprintf_s(modelDir, MAX_PATH, L"%ls/data/models", buffer2);
+		swprintf_s(shaderDir, MAX_PATH, L"%ls/data/shaders", buffer2);
+	}
+	else {
+		// relative path
+		wcscpy(dataDir, L"../../data");
+		wcscpy(textureDir, L"../../data/textures");
+		wcscpy(modelDir, L"../../data/models");
+		wcscpy(shaderDir, L"../../data/shaders");
+	}
+	
 #endif
 
 	DATA_DIR    = dataDir;
@@ -130,10 +140,12 @@ void Com_Run(int argc, char **argv, const ComParam &param) {
 	glutCreateWindow(param.title);
 
 	if (GLEW_OK != glewInit()) {
+		printf("glewInit error\n");
 		return;
 	}
 
 	if (comParam.Setup && !comParam.Setup()) {
+		printf("!comParam.Setup()\n");
 		return;
 	}
 
@@ -411,6 +423,9 @@ bool File_Read(const wchar_t *fileName, File &file, bool appendNullTernimator) {
 	FILE * f = nullptr;
 	_wfopen_s(&f, fileName, L"rb");
 	if (!f) {
+#if defined(__GNUC__)
+		wprintf(L"open file \"%ls\" error\n", fileName);
+#endif
 		return false;
 	}
 
